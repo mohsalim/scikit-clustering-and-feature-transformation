@@ -1,123 +1,14 @@
-from sklearn.cluster import KMeans
 import arff, numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn import metrics
 from sklearn.decomposition import PCA
 from sklearn.decomposition import FastICA
-from sklearn import mixture
-from sklearn.random_projection import GaussianRandomProjection
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 import matplotlib.pyplot as plt
+from sklearn.random_projection import GaussianRandomProjection
+from sklearn.cluster import KMeans
 import time
-from openpyxl import Workbook
-
-def bench_kmeans(estimator, name, k, x_train, y_train, x_test, y_test):
-    bench_kmeans_format = '% 9s   %.2i    %.3f   %.2fs    %.3f   %.2fs    %i   %.3f   %.3f   %.3f   %.3f   %.3f   %.3f'   #%.3f   %.3f'
-
-    # Train.
-    start = time.time()
-    estimator.fit(x_train)
-    train_time = time.time() - start
-
-    # Test.
-    start = time.time()
-    predicted = estimator.predict(x_test)
-    test_time = time.time() - start
-    
-    #print('% 9s' % 'init   k'
-    #  '    time   acc  inertia    homo   compl  v-meas     ARI AMI  FMI')
-    results = (name,
-               k,
-               train_time,
-               metrics.accuracy_score(y_train, estimator.labels_),
-               test_time,
-               metrics.accuracy_score(y_test, predicted),
-               estimator.inertia_,
-               metrics.homogeneity_score(y_train, estimator.labels_),
-               metrics.completeness_score(y_train, estimator.labels_),
-               metrics.v_measure_score(y_train, estimator.labels_),
-               metrics.adjusted_rand_score(y_train, estimator.labels_),
-               metrics.adjusted_mutual_info_score(y_train,  estimator.labels_),
-               metrics.fowlkes_mallows_score(y_train, estimator.labels_))
-         #metrics.calinski_harabaz_score(x_train, estimator.labels_),
-         #metrics.silhouette_score(x_train, estimator.labels_, metric='euclidean')))
-    
-    #print(bench_kmeans_format % (results))
-
-    # TODO why does silhouette score throw an error about label size?
-    # TODO all x_train, estimator.labels_, and y_train all have same size (and its not 1)
-    # TODO should we pass explicit sample size to silhouette score? len(x_train)
-
-    # Return results as an array instead of a tuple.
-    return list(results)
-
-def bench_em(estimator, name, k, x_train, y_train, x_test, y_test):
-    bench_em_format = '% 9s   %.2i    %.3f   %.3f    %.3f   %.3f   %.3f   %.3f '
-
-    # Train.
-    start = time.time()
-    estimator.fit(x_train)
-    train_time = time.time() - start
-
-    # Test.
-    start = time.time()
-    predicted = estimator.predict(x_test)
-    test_time = time.time() - start
-    
-    results = (name,
-               k,
-               train_time,
-               estimator.score(x_train, y_train),
-               test_time,
-               metrics.accuracy_score(y_test, predicted),
-               estimator.aic(x_train),
-               estimator.bic(x_train))
-    
-    #print(bench_em_format % (results))
-
-    # Return results as an array instead of a tuple.
-    return list(results)
-
-def part1(data, target, x_train, x_test, y_train, y_test):
-    # Set up graph stuff.
-    x = []
-    accuracy_y = []
-    train_time_y = []
-    test_time_y = []
-    legend = []
-
-    # K-Means
-    # TODO find best n_clusters range (1-50?)
-    print('--- KMeans ---')
-    wb = Workbook()
-    ws = wb.active
-    headers = ['algorithm', 'k', 'train wall time', 'train accuracy', 'test wall time', 'test accuracy', 'inertia', 'homogeneity', 'completeness', 'v measure', 'ARI', 'AMI', 'FMI']
-    ws.append(headers)
-    for n in range(1, 31):
-        bench_mark = bench_kmeans(KMeans(n_clusters=n, random_state=0), 'KMeans', n, x_train, y_train, x_test, y_test)
-        ws.append(bench_mark)
-    wb.save('part-1-kmeans-bench.xlsx')
-
-    # EM
-    # Run each covariance_type (defaults to full).
-    # full: each component has its own general covariance matrix.
-    # tied: all components share the same general covariance matrix.
-    # diag: each component has its own diagonal covariance matrix.
-    # spherical: each component has its own single variance.
-    print('--- EM ---')
-    cv_types = ['spherical', 'tied', 'diag', 'full']
-    wb = Workbook()
-    ws = wb.active
-    headers = ['algorithm', 'k', 'train wall time', 'train score', 'test wall time', 'test accuracy', 'AIC', 'BIC']
-    ws.append(headers)
-    for cv_type in cv_types:
-        # For each n size components.
-        for n in range(1, 31):
-            # Run expectation maximization (EM) algorithm.
-            # Note: Gaussian Mixture implements EM.
-            bench_mark = bench_em(mixture.GaussianMixture(n_components=n, covariance_type=cv_type), 'EM ' + cv_type, n, x_train, y_train, x_test, y_test)
-            ws.append(bench_mark)
-    wb.save('part-1-em-bench.xlsx')
+from homework_parts import part1
 
 # Get data from arff file.
 dataset = arff.load(open('tic-tac-toe-split.arff', 'r'))
@@ -135,6 +26,7 @@ x_train, x_test, y_train, y_test = train_test_split(data, target, test_size=0.33
 
 # Run each homework part.
 part1(data, target, x_train, x_test, y_train, y_test)
+#part2(data, target, x_train, x_test, y_train, y_test)
 
 # PCA
 print('--- PCA ---')
