@@ -9,27 +9,39 @@ from sklearn.random_projection import GaussianRandomProjection
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 import matplotlib.pyplot as plt
 import time
+from openpyxl import Workbook
 
-def bench_kmeans(estimator, name, x_train, y_train):
+BENCH_KMEANS_FORMAT = '% 9s   %.2i    %.3f   %.2fs    %i   %.3f   %.3f   %.3f   %.3f   %.3f   %.3f'   #%.3f   %.3f'
+
+def bench_kmeans(estimator, name, k, x_train, y_train):
     t0 = time.time()
     estimator.fit(x_train)
-    print('% 9s   %.2fs    %i   %.3f   %.3f   %.3f   %.3f   %.3f   %.3f'   #%.3f   %.3f'
-      % (name,
+    #print('% 9s' % 'init   k'
+    #  '    time   acc  inertia    homo   compl  v-meas     ARI AMI  FMI')
+    results = (name,
+         k,
          (time.time() - t0),
+         metrics.accuracy_score(y_train, estimator.labels_),
          estimator.inertia_,
          metrics.homogeneity_score(y_train, estimator.labels_),
          metrics.completeness_score(y_train, estimator.labels_),
          metrics.v_measure_score(y_train, estimator.labels_),
          metrics.adjusted_rand_score(y_train, estimator.labels_),
          metrics.adjusted_mutual_info_score(y_train,  estimator.labels_),
-         metrics.fowlkes_mallows_score(y_train, estimator.labels_)))
+         metrics.fowlkes_mallows_score(y_train, estimator.labels_))
          #metrics.calinski_harabaz_score(x_train, estimator.labels_),
          #metrics.silhouette_score(x_train, estimator.labels_, metric='euclidean')))
+    
+    print(BENCH_KMEANS_FORMAT % (results))
+
     # TODO why does silhouette score throw an error about label size?
     # TODO all x_train, estimator.labels_, and y_train all have same size (and its not 1)
     # TODO should we pass explicit sample size to silhouette score? len(x_train)
 
-def part1(data, target, x_train, x_test, y_train, y_test):
+    # Return results as an array instead of a tuple.
+    return list(results)
+
+def part1(data, target, x_train, x_test, y_train, y_test, wb):
     # Set up graph stuff.
     x = []
     accuracy_y = []
@@ -40,6 +52,10 @@ def part1(data, target, x_train, x_test, y_train, y_test):
     # K-Means
     # TODO find best n_clusters range (1-50?)
     print('--- KMeans ---')
+    ws = wb.active
+    headers = ['algorithm', 'k', 'wall time', 'accuracy', 'inertia', 'homogeneity', 'completeness', 'v measure', 'ARI', 'AMI', 'FMI']
+    ws.append(headers)
+
     for n in range(1, 31):
         x.append(n)
         # Run k-means algorithm.
@@ -58,10 +74,12 @@ def part1(data, target, x_train, x_test, y_train, y_test):
         #print(expected_labels)
         score = metrics.accuracy_score(expected_labels, predicted_labels)
         accuracy_y.append(score)
-        bench_kmeans(KMeans(n_clusters=n, random_state=0).fit(data, target), 'KMeans', data, target)
+        bench_mark = bench_kmeans(KMeans(n_clusters=n, random_state=0), 'KMeans', n, x_train, y_train)
+        ws.append(bench_mark)
         #print(kmeans.labels_)
         #print("kmeans " + str(n) + ": " + str(score))
         #print(kmeans.cluster_centers_)
+    wb.save('part-1-kmeans-bench.xlsx')
 
     plt.figure(1)
     plt.plot(x, accuracy_y)
@@ -112,7 +130,7 @@ def part1(data, target, x_train, x_test, y_train, y_test):
             #print("em " + cv_type + " " + str(n) + ": " + str(score))
             #print(kmeans.cluster_centers_)
             # TODO how to bench mark EM????
-            #bench_kmeans(mixture.GaussianMixture(n_components=n, covariance_type=cv_type).fit(data, target), 'EM', data, target)
+            #bench_kmeans(mixture.GaussianMixture(n_components=n, covariance_type=cv_type), 'EM', x_train, y_train)
 
         plt.figure(1)
         plt.plot(x, accuracy_y)
@@ -146,6 +164,9 @@ data = np.array(dataset['data'])
 # 9 actual features * 3 binary classes for each feature = 27
 feature_count = 27
 
+# Excel workbook.
+wb = Workbook()
+
 # Format data. First 27 are features, 28th is label.
 # For parts 1 and 2, we want to use all the data/target instead of train/test sets.
 target = np.squeeze(data[:, feature_count:]).astype(int)
@@ -155,7 +176,7 @@ data = data[:, :feature_count]
 x_train, x_test, y_train, y_test = train_test_split(data, target, test_size=0.33, random_state=42)
 
 # Run each homework part.
-part1(data, target, x_train, x_test, y_train, y_test)
+part1(data, target, x_train, x_test, y_train, y_test, wb)
 
 # PCA
 print('--- PCA ---')
