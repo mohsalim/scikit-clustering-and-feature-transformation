@@ -13,7 +13,7 @@ import time
 def bench_kmeans(estimator, name, x_train, y_train):
     t0 = time.time()
     estimator.fit(x_train)
-    print('% 9s   %.2fs    %i   %.3f   %.3f   %.3f   %.3f   %.3f'
+    print('% 9s   %.2fs    %i   %.3f   %.3f   %.3f   %.3f   %.3f   %.3f'   #%.3f   %.3f'
       % (name,
          (time.time() - t0),
          estimator.inertia_,
@@ -21,19 +21,13 @@ def bench_kmeans(estimator, name, x_train, y_train):
          metrics.completeness_score(y_train, estimator.labels_),
          metrics.v_measure_score(y_train, estimator.labels_),
          metrics.adjusted_rand_score(y_train, estimator.labels_),
-         metrics.adjusted_mutual_info_score(y_train,  estimator.labels_)))
+         metrics.adjusted_mutual_info_score(y_train,  estimator.labels_),
+         metrics.fowlkes_mallows_score(y_train, estimator.labels_)))
+         #metrics.calinski_harabaz_score(x_train, estimator.labels_),
+         #metrics.silhouette_score(x_train, estimator.labels_, metric='euclidean')))
     # TODO why does silhouette score throw an error about label size?
     # TODO all x_train, estimator.labels_, and y_train all have same size (and its not 1)
-##    print('% 9s   %.2fs    %i   %.3f   %.3f   %.3f   %.3f   %.3f    %.3f'
-##          % (name, (time.time() - t0), estimator.inertia_,
-##             metrics.homogeneity_score(y_train, estimator.labels_),
-##             metrics.completeness_score(y_train, estimator.labels_),
-##             metrics.v_measure_score(y_train, estimator.labels_),
-##             metrics.adjusted_rand_score(y_train, estimator.labels_),
-##             metrics.adjusted_mutual_info_score(y_train,  estimator.labels_),
-##             metrics.silhouette_score(x_train, estimator.labels_,
-##                                      metric='euclidean',
-##                                      sample_size=len(x_train))))
+    # TODO should we pass explicit sample size to silhouette score? len(x_train)
 
 def part1(data, target, x_train, x_test, y_train, y_test):
     # Set up graph stuff.
