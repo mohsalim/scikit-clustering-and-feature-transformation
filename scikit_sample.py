@@ -14,7 +14,9 @@ def bench_kmeans(estimator, name, x_train, y_train):
     t0 = time.time()
     estimator.fit(x_train)
     print('% 9s   %.2fs    %i   %.3f   %.3f   %.3f   %.3f   %.3f'
-      % (name, (time.time() - t0), estimator.inertia_,
+      % (name,
+         (time.time() - t0),
+         estimator.inertia_,
          metrics.homogeneity_score(y_train, estimator.labels_),
          metrics.completeness_score(y_train, estimator.labels_),
          metrics.v_measure_score(y_train, estimator.labels_),
@@ -33,7 +35,7 @@ def bench_kmeans(estimator, name, x_train, y_train):
 ##                                      metric='euclidean',
 ##                                      sample_size=len(x_train))))
 
-def part1(data, x_train, x_test, y_train, y_test):
+def part1(data, target, x_train, x_test, y_train, y_test):
     # Set up graph stuff.
     x = []
     accuracy_y = []
@@ -62,7 +64,7 @@ def part1(data, x_train, x_test, y_train, y_test):
         #print(expected_labels)
         score = metrics.accuracy_score(expected_labels, predicted_labels)
         accuracy_y.append(score)
-        bench_kmeans(KMeans(n_clusters=n, random_state=0).fit(x_train, y_train), 'KMeans', x_train, y_train)
+        bench_kmeans(KMeans(n_clusters=n, random_state=0).fit(data, target), 'KMeans', data, target)
         #print(kmeans.labels_)
         #print("kmeans " + str(n) + ": " + str(score))
         #print(kmeans.cluster_centers_)
@@ -115,6 +117,8 @@ def part1(data, x_train, x_test, y_train, y_test):
             accuracy_y.append(score)
             #print("em " + cv_type + " " + str(n) + ": " + str(score))
             #print(kmeans.cluster_centers_)
+            # TODO how to bench mark EM????
+            #bench_kmeans(mixture.GaussianMixture(n_components=n, covariance_type=cv_type).fit(data, target), 'EM', data, target)
 
         plt.figure(1)
         plt.plot(x, accuracy_y)
@@ -145,16 +149,19 @@ def part1(data, x_train, x_test, y_train, y_test):
 # Get data from arff file.
 dataset = arff.load(open('tic-tac-toe-split.arff', 'r'))
 data = np.array(dataset['data'])
+# 9 actual features * 3 binary classes for each feature = 27
+feature_count = 27
 
 # Format data. First 27 are features, 28th is label.
-target = np.squeeze(data[:, 27:]).astype(int)
-data = data[:, :27]
+# For parts 1 and 2, we want to use all the data/target instead of train/test sets.
+target = np.squeeze(data[:, feature_count:]).astype(int)
+data = data[:, :feature_count]
 
 # Randomly split data into 2/3 training set and 1/3 testing set.
 x_train, x_test, y_train, y_test = train_test_split(data, target, test_size=0.33, random_state=42)
 
 # Run each homework part.
-part1(data, x_train, x_test, y_train, y_test)
+part1(data, target, x_train, x_test, y_train, y_test)
 
 # PCA
 print('--- PCA ---')
