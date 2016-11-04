@@ -73,7 +73,7 @@ def bench_em(estimator, name, k, x_train, y_train, x_test, y_test):
                estimator.aic(x_train),
                estimator.bic(x_train))
     
-    print(bench_em_format % (results))
+    #print(bench_em_format % (results))
 
     # Return results as an array instead of a tuple.
     return list(results)
@@ -111,65 +111,13 @@ def part1(data, target, x_train, x_test, y_train, y_test):
     headers = ['algorithm', 'k', 'train wall time', 'train score', 'test wall time', 'test accuracy', 'AIC', 'BIC']
     ws.append(headers)
     for cv_type in cv_types:
-        # Restart all graph arrays.
-        x = []
-        accuracy_y = []
-        train_time_y = []
-        test_time_y = []
         # For each n size components.
         for n in range(1, 31):
-            x.append(n)
             # Run expectation maximization (EM) algorithm.
             # Note: Gaussian Mixture implements EM.
-            em = mixture.GaussianMixture(n_components=n, covariance_type=cv_type)
-            start = time.time()
-            em.fit(x_train, y_train)
-            train_time = time.time() - start
-            train_time_y.append(train_time)
-            #print(em.labels_)
-            start = time.time()   
-            predicted_labels = em.predict(x_test)
-            test_time = time.time() - start
-            test_time_y.append(test_time)
-            #print(predicted_labels)
-            # For every array, get the last item. Then squeeze all them together so it's a 1D array instead of a 2D array.
-            expected_labels = y_test
-            #print(expected_labels)
-            score = metrics.accuracy_score(expected_labels, predicted_labels)
-            accuracy_y.append(score)
-            #print("em " + cv_type + " " + str(n) + ": " + str(score))
-            #print(kmeans.cluster_centers_)
-            # TODO how to bench mark EM????
             bench_mark = bench_em(mixture.GaussianMixture(n_components=n, covariance_type=cv_type), 'EM ' + cv_type, n, x_train, y_train, x_test, y_test)
             ws.append(bench_mark)
-
-        plt.figure(1)
-        plt.plot(x, accuracy_y)
-        plt.figure(2)
-        plt.plot(x, train_time_y)
-        plt.figure(3)
-        plt.plot(x, test_time_y)
-        legend.append('EM ' + cv_type)
-
     wb.save('part-1-em-bench.xlsx')
-    
-    x_label = 'Number of Components/Clusters'
-    plt.figure(1)
-    plt.xlabel(x_label)
-    plt.ylabel('Accuracy')
-    plt.legend(legend, loc='upper right')
-
-    plt.figure(2)
-    plt.xlabel(x_label)
-    plt.ylabel('Train Wall Time')
-    plt.legend(legend, loc='upper left')
-
-    plt.figure(3)
-    plt.xlabel(x_label)
-    plt.ylabel('Test Wall Time')
-    plt.legend(legend, loc='upper center')
-
-    plt.show()
 
 # Get data from arff file.
 dataset = arff.load(open('tic-tac-toe-split.arff', 'r'))
