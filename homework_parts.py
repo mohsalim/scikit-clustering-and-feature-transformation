@@ -110,21 +110,21 @@ def part3(data, target, k_list, x_train, y_train, x_test, y_test):
         # Hence we run the k-means algorithm only once with n_init=1.
         # Else wise it will give a warning and set n_init to 1 anyways.
         kmeans = KMeans(init=pca.components_, n_clusters=k, n_init=1, random_state=0)
-        run_clustering_with_dr(kmeans, k, 'KMeans', 'PCA', x_train, y_train, x_test, y_test)
+        run_kmeans_with_dr(kmeans, k, 'KMeans', 'PCA', x_train, y_train, x_test, y_test)
 
     # ICA -> KMeans
     print('--- ICA -> KMeans ---')
     for k in k_list:
         ica = FastICA(n_components=k).fit(x_train)
         kmeans = KMeans(init=ica.components_, n_clusters=k, n_init=1, random_state=0)
-        run_clustering_with_dr(kmeans, k, 'KMeans', 'ICA', x_train, y_train, x_test, y_test)
+        run_kmeans_with_dr(kmeans, k, 'KMeans', 'ICA', x_train, y_train, x_test, y_test)
 
     # RCA -> KMeans
     print('--- RCA -> KMeans ---')
     for k in k_list:
         rca = GaussianRandomProjection(n_components=k).fit(x_train)
         kmeans = KMeans(init=rca.components_, n_clusters=k, n_init=1, random_state=0)
-        run_clustering_with_dr(kmeans, k, 'KMeans', 'RCA', x_train, y_train, x_test, y_test)
+        run_kmeans_with_dr(kmeans, k, 'KMeans', 'RCA', x_train, y_train, x_test, y_test)
 
     # LDA -> KMeans
 ##    print('--- LDA -> KMeans ---')
@@ -133,9 +133,40 @@ def part3(data, target, k_list, x_train, y_train, x_test, y_test):
 ##        # LDA doesn't have a components attribute.
 ##        # The coefficients is apparently the equivalent according to this: http://stackoverflow.com/a/13986744/2498729
 ##        kmeans = KMeans(init=lda.coef_, n_clusters=k, n_init=1, random_state=0)
-##        run_clustering_with_dr(kmeans, k, 'KMeans', 'LDA', x_train, y_train, x_test, y_test)
+##        run_kmeans_with_dr(kmeans, k, 'KMeans', 'LDA', x_train, y_train, x_test, y_test)
 
-def run_clustering_with_dr(cluster_algo, k, clustering_name, dr_name, x_train, y_train, x_test, y_test):
+    cv_types = ['spherical', 'tied', 'diag', 'full']
+    for cv_type in cv_types:
+        # PCA -> EM
+        print('--- PCA -> EM ---')
+        for k in k_list:
+            pca = PCA(n_components=k).fit(x_train)
+            # TODO should I be using weights_init or means_init
+            em = mixture.GaussianMixture(n_components=k, covariance_type=cv_type, means_init=pca.components_)
+            run_em_with_dr(em, k, 'EM ' + cv_type, 'PCA', x_train, y_train, x_test, y_test)
+
+        # ICA -> EM
+        print('--- ICA -> EM ---')
+        for k in k_list:
+            ica = FastICA(n_components=k).fit(x_train)
+            em = mixture.GaussianMixture(n_components=k, covariance_type=cv_type, means_init=ica.components_)
+            run_em_with_dr(em, k, 'EM ' + cv_type, 'ICA', x_train, y_train, x_test, y_test)
+
+        # RCA -> EM
+        print('--- RCA -> EM ---')
+        for k in k_list:
+            rca = GaussianRandomProjection(n_components=k).fit(x_train)
+            em = mixture.GaussianMixture(n_components=k, covariance_type=cv_type, means_init=rca.components_)
+            run_em_with_dr(em, k, 'EM ' + cv_type, 'RCA', x_train, y_train, x_test, y_test)
+
+##        # LDA -> EM
+##        print('--- LDA -> EM ---')
+##        for k in k_list:
+##            lda = LinearDiscriminantAnalysis(n_components=k).fit(x_train.astype(np.float), y_train.astype(int))
+##            em = mixture.GaussianMixture(n_components=k, covariance_type=cv_type, means_init=lda.coef_)
+##            run_em_with_dr(em, k, 'EM ' + cv_type, 'LDA', x_train, y_train, x_test, y_test)
+
+def run_kmeans_with_dr(cluster_algo, k, clustering_name, dr_name, x_train, y_train, x_test, y_test):
     # Train.
     cluster_algo.fit(x_train)
     score = metrics.accuracy_score(y_train, cluster_algo.labels_)
@@ -144,5 +175,14 @@ def run_clustering_with_dr(cluster_algo, k, clustering_name, dr_name, x_train, y
     #Test
     predicted_labels = cluster_algo.predict(x_test)
     score = metrics.accuracy_score(y_test, predicted_labels)    
+    print(algo_name + " " + str(k) + " test: " + str(score))
+
+def run_em_with_dr(cluster_algo, k, clustering_name, dr_name, x_train, y_train, x_test, y_test):
+    # Train.
+    cluster_algo.fit(x_train)
+    #Test
+    predicted_labels = cluster_algo.predict(x_test)
+    score = metrics.accuracy_score(y_test, predicted_labels)
+    algo_name = clustering_name + " " + dr_name
     print(algo_name + " " + str(k) + " test: " + str(score))
 
