@@ -208,3 +208,35 @@ def bench_rca(estimator, name, k, iterations, x_train, y_train, x_test, y_test):
                estimator.n_components)
 
     return results
+
+def bench_lda(estimator, name, k, x_train, y_train, x_test, y_test):
+    # Train
+    start = time.time()
+    estimator.fit(x_train.astype(np.float), y_train.astype(int))
+    train_time = time.time() - start
+
+    results = (name,
+               k,
+               train_time,
+               # Weight vector(s).
+               str(estimator.coef_),
+               # Intercept term.
+               str(estimator.intercept_),
+               # Covariance matrix (shared by all classes).
+               #str(covariance_),
+               # Percentage of variance explained by each of the selected components.
+               # If n_components is not set then all components are stored and the sum of explained variances is equal to 1.0.
+               # Only available when eigen or svd solver is used.
+               str(estimator.explained_variance_ratio_),
+               # Class means.
+               str(estimator.means_),
+               # Class priors (sum to 1).
+               str(estimator.priors_),
+               # Scaling of the features in the space spanned by the class centroids.
+               str(estimator.scalings_),
+               # Overall mean.
+               str(estimator.xbar_),
+               # Unique class labels.
+               str(estimator.classes_))
+
+    return results

@@ -1,4 +1,4 @@
-from bench_mark import bench_kmeans, bench_em, bench_pca, bench_ica, bench_rca
+from bench_mark import bench_kmeans, bench_em, bench_pca, bench_ica, bench_rca, bench_lda
 from openpyxl import Workbook
 from sklearn.cluster import KMeans
 from sklearn.random_projection import GaussianRandomProjection
@@ -78,14 +78,9 @@ def part2(data, target, x_train, y_train, x_test, y_test, features_count):
 
     # RCA
     print('--- RCA ---')
-    rca = GaussianRandomProjection(n_components=2)
-    rca.fit(x_train)
-    print(rca.components_) 
-    print(rca.n_components_)
-
     wb = Workbook()
     ws = wb.active
-    headers = ['algorithm', 'k', 'iterations' 'train wall time', 'components', 'n components']
+    headers = ['algorithm', 'k', 'iterations', 'train wall time', 'components', 'n components']
     ws.append(headers)
     for n in range(1, fc):
         for i in range(0, 101):
@@ -106,6 +101,17 @@ def part2(data, target, x_train, y_train, x_test, y_test, features_count):
     print(lda.scalings_)
     print(lda.xbar_)
     print(lda.classes_)
+
+    wb = Workbook()
+    ws = wb.active
+    headers = ['algorithm', 'k', 'train wall time', 'coef', 'intercept',
+               'explained variance ratio', 'means', 'priors', 'scalings', 'xbar', 'classes']
+    ws.append(headers)
+    for n in range(1, fc):
+        bench_mark = bench_lda(LinearDiscriminantAnalysis(n_components=n), 'LDA', n, x_train, y_train, x_test, y_test)
+        ws.append(bench_mark)
+    wb.save('part-2-lda-bench.xlsx')
+
 
 def part3(data, target, x_train, y_train, x_test, y_test):
     # PCA -> KMeans
