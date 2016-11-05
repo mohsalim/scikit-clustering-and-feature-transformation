@@ -51,7 +51,8 @@ def part2(data, target, x_train, y_train, x_test, y_test, features_count):
     print('--- PCA ---')
     wb = Workbook()
     ws = wb.active
-    headers = ['algorithm', 'k', 'train wall time', 'noise variance', 'dimension size after dimensionality reduction']
+    headers = ['algorithm', 'k', 'train wall time', 'noise variance', 'dimension size after dimensionality reduction',
+               'components', 'explained variance', 'explained variance ratio', 'mean', 'n components']
     ws.append(headers)
     for n in range(1, fc):
         bench_mark = bench_pca(PCA(n_components=n), 'PCA', n, x_train, y_train, x_test, y_test)
@@ -63,7 +64,12 @@ def part2(data, target, x_train, y_train, x_test, y_test, features_count):
     # TODO consider trying different functions (fun) and tolerance values (tol).
     wb = Workbook()
     ws = wb.active
-    headers = ['algorithm', 'k', 'train wall time', 'iterations', 'dimension size after dimensionality reduction']
+    headers = ['algorithm', 'k', 'train wall time', 'iterations', 'dimension size after dimensionality reduction',
+               'components (unmixing matrix)', 'mixing matrix',
+               'original kurtosis', 'ok min', 'ok max', 'ok average',
+               'transformed kurtosis', 'tk min', 'tk max', 'tk average',
+               'components kurtosis', 'ck min', 'ck max', 'ck average',
+               'mixing kurtosis', 'mk min', 'mk max', 'mk average']
     ws.append(headers)
     for n in range(1, fc):
         bench_mark = bench_ica(FastICA(n_components=n), 'ICA', n, x_train, y_train, x_test, y_test)
