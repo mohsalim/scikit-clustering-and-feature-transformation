@@ -94,3 +94,22 @@ def bench_pca(estimator, name, k, x_train, y_train, x_test, y_test):
     #print(bench_pca_format % (results))
 
     return list(results)
+
+def bench_ica(estimator, name, k, x_train, y_train, x_test, y_test):
+    bench_ica_format = '% 9s   %.2i   %.2i    %.3f   %.3f'
+
+    # Train.
+    start = time.time()   
+    x_transformed = estimator.fit_transform(x_train)
+    train_time = time.time() - start
+
+    # Note, the length of any
+    results = (name,
+               k,
+               train_time,
+               estimator.n_iter_,
+               safely_get_dimensionality_reduction(x_transformed))
+               
+    #print(bench_ica_format % (results))
+
+    return list(results)

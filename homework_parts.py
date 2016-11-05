@@ -1,4 +1,4 @@
-from bench_mark import bench_kmeans, bench_em, bench_pca
+from bench_mark import bench_kmeans, bench_em, bench_pca, bench_ica
 from openpyxl import Workbook
 from sklearn.cluster import KMeans
 from sklearn.random_projection import GaussianRandomProjection
@@ -44,25 +44,31 @@ def part1(data, target, x_train, y_train, x_test, y_test):
             ws.append(bench_mark)
     wb.save('part-1-em-bench.xlsx')
 
-def part2(data, target, x_train, y_train, x_test, y_test):
+def part2(data, target, x_train, y_train, x_test, y_test, features_count):
+    fc = features_count + 1
+    
     # PCA
     print('--- PCA ---')
     wb = Workbook()
     ws = wb.active
     headers = ['algorithm', 'k', 'train wall time', 'noise variance', 'dimension size after dimensionality reduction']
     ws.append(headers)
-    for n in range(1, 28):
+    for n in range(1, fc):
         bench_mark = bench_pca(PCA(n_components=n), 'PCA', n, x_train, y_train, x_test, y_test)
         ws.append(bench_mark)
     wb.save('part-2-pca-bench.xlsx')
 
     # ICA
     print('--- ICA ---')
-    ica = FastICA(n_components=2)
-    ica.fit(x_train)
-    print(ica.components_) 
-    print(ica.mixing_ ) 
-    print(ica.n_iter_)
+    # TODO consider trying different functions (fun) and tolerance values (tol).
+    wb = Workbook()
+    ws = wb.active
+    headers = ['algorithm', 'k', 'train wall time', 'iterations', 'dimension size after dimensionality reduction']
+    ws.append(headers)
+    for n in range(1, fc):
+        bench_mark = bench_ica(FastICA(n_components=n), 'ICA', n, x_train, y_train, x_test, y_test)
+        ws.append(bench_mark)
+    wb.save('part-2-ica-bench.xlsx')
 
     # RCA
     print('--- RCA ---')
