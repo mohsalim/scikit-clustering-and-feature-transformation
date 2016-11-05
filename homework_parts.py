@@ -90,18 +90,6 @@ def part2(data, target, x_train, y_train, x_test, y_test, features_count):
 
     # LDA
     print('--- LDA ---')
-    lda = LinearDiscriminantAnalysis(n_components=2)
-    lda.fit(x_train.astype(np.float), y_train.astype(int))
-    print(lda.coef_)
-    print(lda.intercept_)
-    #print(lda.covariance_)
-    print(lda.explained_variance_ratio_)
-    print(lda.means_)
-    print(lda.priors_)
-    print(lda.scalings_)
-    print(lda.xbar_)
-    print(lda.classes_)
-
     wb = Workbook()
     ws = wb.active
     headers = ['algorithm', 'k', 'train wall time', 'coef', 'intercept',
