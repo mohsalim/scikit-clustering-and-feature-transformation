@@ -112,6 +112,29 @@ def part3(data, target, k_list, x_train, y_train, x_test, y_test):
         kmeans = KMeans(init=pca.components_, n_clusters=k, n_init=1, random_state=0)
         run_clustering_with_dr(kmeans, k, 'KMeans', 'PCA', x_train, y_train, x_test, y_test)
 
+    # ICA -> KMeans
+    print('--- ICA -> KMeans ---')
+    for k in k_list:
+        ica = FastICA(n_components=k).fit(x_train)
+        kmeans = KMeans(init=ica.components_, n_clusters=k, n_init=1, random_state=0)
+        run_clustering_with_dr(kmeans, k, 'KMeans', 'ICA', x_train, y_train, x_test, y_test)
+
+    # RCA -> KMeans
+    print('--- RCA -> KMeans ---')
+    for k in k_list:
+        rca = GaussianRandomProjection(n_components=k).fit(x_train)
+        kmeans = KMeans(init=rca.components_, n_clusters=k, n_init=1, random_state=0)
+        run_clustering_with_dr(kmeans, k, 'KMeans', 'RCA', x_train, y_train, x_test, y_test)
+
+    # LDA -> KMeans
+##    print('--- LDA -> KMeans ---')
+##    for k in k_list:
+##        lda = LinearDiscriminantAnalysis(n_components=k).fit(x_train.astype(np.float), y_train.astype(int))
+##        # LDA doesn't have a components attribute.
+##        # The coefficients is apparently the equivalent according to this: http://stackoverflow.com/a/13986744/2498729
+##        kmeans = KMeans(init=lda.coef_, n_clusters=k, n_init=1, random_state=0)
+##        run_clustering_with_dr(kmeans, k, 'KMeans', 'LDA', x_train, y_train, x_test, y_test)
+
 def run_clustering_with_dr(cluster_algo, k, clustering_name, dr_name, x_train, y_train, x_test, y_test):
     # Train.
     cluster_algo.fit(x_train)
