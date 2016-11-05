@@ -101,21 +101,25 @@ def part2(data, target, x_train, y_train, x_test, y_test, features_count):
     wb.save('part-2-lda-bench.xlsx')
 
 
-def part3(data, target, x_train, y_train, x_test, y_test):
+def part3(data, target, k_list, x_train, y_train, x_test, y_test):
     # PCA -> KMeans
     print('--- PCA -> KMeans ---')
-    n = 2
-    pca = PCA(n_components=n).fit(x_train)
-    # In this case the seeding of the centers is deterministic.
-    # Hence we run the k-means algorithm only once with n_init=1.
-    # Else wise it will give a warning and set n_init to 1 anyways.
-    kmeans = KMeans(init=pca.components_, n_clusters=n, n_init=1, random_state=0).fit(x_train)
-    #print(kmeans.labels_)
-    predicted_labels = kmeans.predict(x_test)
-    #print(predicted_labels)
-    # For every array, get the last item. Then squeeze all them together so it's a 1D array instead of a 2D array.
-    expected_labels = y_test
-    #print(expected_labels)
-    score = metrics.accuracy_score(expected_labels, predicted_labels)    
-    print("kmeans with pca " + str(n) + ": " + str(score))
+    for k in k_list:
+        pca = PCA(n_components=k).fit(x_train)
+        # In this case the seeding of the centers is deterministic.
+        # Hence we run the k-means algorithm only once with n_init=1.
+        # Else wise it will give a warning and set n_init to 1 anyways.
+        kmeans = KMeans(init=pca.components_, n_clusters=k, n_init=1, random_state=0)
+        run_clustering_with_dr(kmeans, k, 'KMeans', 'PCA', x_train, y_train, x_test, y_test)
+
+def run_clustering_with_dr(cluster_algo, k, clustering_name, dr_name, x_train, y_train, x_test, y_test):
+    # Train.
+    cluster_algo.fit(x_train)
+    score = metrics.accuracy_score(y_train, cluster_algo.labels_)
+    algo_name = clustering_name + " " + dr_name
+    print(algo_name + " " + str(k) + " train: " + str(score))
+    #Test
+    predicted_labels = cluster_algo.predict(x_test)
+    score = metrics.accuracy_score(y_test, predicted_labels)    
+    print(algo_name + " " + str(k) + " test: " + str(score))
 
