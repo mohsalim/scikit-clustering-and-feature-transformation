@@ -1,9 +1,8 @@
-from bench_mark import bench_kmeans, bench_em
+from bench_mark import bench_kmeans, bench_em, bench_pca
 from openpyxl import Workbook
 from sklearn.cluster import KMeans
 from sklearn.random_projection import GaussianRandomProjection
 from sklearn import mixture
-import matplotlib.pyplot as plt
 from sklearn import metrics
 from sklearn.decomposition import PCA
 from sklearn.decomposition import FastICA
@@ -48,36 +47,14 @@ def part1(data, target, x_train, y_train, x_test, y_test):
 def part2(data, target, x_train, y_train, x_test, y_test):
     # PCA
     print('--- PCA ---')
-    x = []
-    noise_variance_y=[]
-    train_time_y = []
+    wb = Workbook()
+    ws = wb.active
+    headers = ['algorithm', 'k', 'train wall time', 'noise variance', 'dimension size after dimensionality reduction']
+    ws.append(headers)
     for n in range(1, 28):
-        x.append(n)
-        pca = PCA(n_components=n)
-        start = time.time()   
-        pca.fit(x_train)
-        train_time = time.time() - start
-        train_time_y.append(train_time)
-        #print(pca.components_) 
-        #print(pca.explained_variance_) 
-        #print(pca.explained_variance_ratio_) 
-        #print(pca.mean_)
-        #print(pca.n_components_)
-        noise_variance_y.append(pca.noise_variance_)
-
-
-    x_label = 'Number of Components/Clusters'
-    plt.figure(1)
-    plt.xlabel(x_label)
-    plt.ylabel('Noise Variance')
-    plt.plot(x, noise_variance_y)
-
-    plt.figure(2)
-    plt.xlabel(x_label)
-    plt.ylabel('Train Wall Time')
-    plt.plot(x, train_time_y)
-
-    plt.show()
+        bench_mark = bench_pca(PCA(n_components=n), 'PCA', n, x_train, y_train, x_test, y_test)
+        ws.append(bench_mark)
+    wb.save('part-2-pca-bench.xlsx')
 
     # ICA
     print('--- ICA ---')

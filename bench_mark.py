@@ -38,7 +38,6 @@ def bench_kmeans(estimator, name, k, x_train, y_train, x_test, y_test):
     # TODO all x_train, estimator.labels_, and y_train all have same size (and its not 1)
     # TODO should we pass explicit sample size to silhouette score? len(x_train)
 
-    # Return results as an array instead of a tuple.
     return list(results)
 
 def bench_em(estimator, name, k, x_train, y_train, x_test, y_test):
@@ -65,5 +64,33 @@ def bench_em(estimator, name, k, x_train, y_train, x_test, y_test):
     
     #print(bench_em_format % (results))
 
-    # Return results as an array instead of a tuple.
+    return list(results)
+
+
+def safely_get_dimensionality_reduction(x_transformed):
+    base = len(x_transformed[0]);  
+    for xt in x_transformed:
+        xtl = len(xt)
+        if xtl != base:
+            print('DR base = ' + str(base) + ', DR inconsistent value = ' + str(xtl))
+    return base
+
+def bench_pca(estimator, name, k, x_train, y_train, x_test, y_test):
+    bench_pca_format = '% 9s   %.2i    %.3f   %.3f    %.3f'   #%.3f'
+
+    # Train.
+    start = time.time()   
+    x_transformed = estimator.fit_transform(x_train)
+    train_time = time.time() - start
+
+    # Note, the length of any
+    results = (name,
+               k,
+               train_time,
+               #estimator.score(x_train, y_train),
+               estimator.noise_variance_,
+               safely_get_dimensionality_reduction(x_transformed))
+               
+    #print(bench_pca_format % (results))
+
     return list(results)
