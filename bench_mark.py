@@ -119,8 +119,10 @@ def bench_pca(estimator, name, k, x_train, y_train, x_test, y_test):
                estimator.noise_variance_,
                safely_get_dimensionality_reduction(x_transformed),
                # Principal axes in feature space, representing the directions of maximum variance in the data. The components are sorted by explained_variance_.
+               # Note the components are the eigen vectors.
                str(estimator.components_),
                # The amount of variance explained by each of the selected components.
+               # Note the explained variance is the eigen values: http://stackoverflow.com/a/31941631/2498729
                str(estimator.explained_variance_),
                # Percentage of variance explained by each of the selected components.
                # If n_components is not set then all components are stored and the sum of explained variances is equal to 1.0.
@@ -188,3 +190,21 @@ def bench_ica(estimator, name, k, x_train, y_train, x_test, y_test):
     #print(bench_ica_format % (results))
 
     return list(results)
+
+def bench_rca(estimator, name, k, iterations, x_train, y_train, x_test, y_test):
+    # Train
+    start = time.time()
+    data = x_train
+    for i in range(0, iterations):
+        estimator.fit(data)
+        data = estimator.components_
+    train_time = time.time() - start
+    
+    results = (name,
+               k,
+               iterations,
+               train_time,
+               str(estimator.components_),
+               estimator.n_components)
+
+    return results
