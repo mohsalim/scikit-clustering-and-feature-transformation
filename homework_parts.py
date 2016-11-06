@@ -226,51 +226,46 @@ def run_em_with_dr(cluster_algo, k, clustering_name, dr_name, x_train, y_train, 
 
 def part4(data, target, k_list, x_train, y_train, x_test, y_test):
     x_train_float = x_train.astype(np.float)
+    y_train_int = y_train.astype(int)
+    x_test_float = x_test.astype(np.float)
     
     # PCA -> ANN
     print('--- PCA -> ANN ---')
     for k in k_list:
         pca = PCA(n_components=k).fit(x_train)
         mlp = MLPRegressor(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(15,), random_state=1)
-        run_ann_with_dr(mlp, pca.transform(x_train_float), k, 'ANN', 'PCA', x_train_float, y_train, x_test, y_test)
+        run_ann_with_dr(mlp, k, 'ANN', 'PCA', pca.transform(x_train_float), y_train, pca.transform(x_test_float), y_test)
 
     # ICA -> ANN
     print('--- ICA -> ANN ---')
     for k in k_list:
         ica = FastICA(n_components=k).fit(x_train)
         mlp = MLPRegressor(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(15,), random_state=1)
-        run_ann_with_dr(mlp, ica.transform(x_train_float), k, 'ANN', 'ICA', x_train_float, y_train, x_test, y_test)
+        run_ann_with_dr(mlp, k, 'ANN', 'ICA', ica.transform(x_train_float), y_train, ica.transform(x_test_float), y_test)
 
     # RCA -> ANN
     print('--- RCA -> ANN ---')
     for k in k_list:
         rca = GaussianRandomProjection(n_components=k).fit(x_train)
         mlp = MLPRegressor(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(15,), random_state=1)
-        run_ann_with_dr(mlp, rca.transform(x_train_float), k, 'ANN', 'RCA', x_train_float, y_train, x_test, y_test)
+        run_ann_with_dr(mlp, k, 'ANN', 'RCA', rca.transform(x_train_float), y_train, rca.transform(x_test_float), y_test)
 
-    # LDA -> ANN
-##    print('--- LDA -> ANN ---')
-##    for k in k_list:
-##        lda = LinearDiscriminantAnalysis(n_components=k).fit(x_train.astype(np.float), y_train.astype(int))
-##        mlp = MLPRegressor(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(15,), random_state=1)
-##        run_ann_with_dr(mlp, lda.transform(x_train_float), k, 'ANN', 'LDA', x_train_float, y_train, x_test, y_test)
+    # ETR -> ANN
+    print('--- ETR -> ANN ---')
+    for k in k_list:
+        etr = ExtraTreeRegressor().fit(x_train_float, y_train_int)
+        model = SelectFromModel(etr, prefit=True)
+        mlp = MLPRegressor(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(15,), random_state=1)
+        run_ann_with_dr(mlp, k, 'ANN', 'ETR', model.transform(x_train_float), y_train, model.transform(x_test_float), y_test)
 
-
-def run_ann_with_dr(ann, dr_data, k, ann_name, dr_name, x_train, y_train, x_test, y_test):
+def run_ann_with_dr(ann, k, ann_name, dr_name, x_train, y_train, x_test, y_test):
     # Train.
-    print(dr_data)
-    print(y_train)
-    ann.fit(dr_data, y_train)
-
-    print(x_train)
-
-    print(y_train)
-    print(ann.predict(x_train))
-    score = metrics.accuracy_score(y_train, ann.predict(x_train))
+    ann.fit(x_train, y_train)
+    score = metrics.mean_squared_error(y_train.astype(np.float), ann.predict(x_train))
     algo_name = ann_name + " " + dr_name
     print(algo_name + " " + str(k) + " train: " + str(score))
-    #Test
-    predicted_labels = ann.predict(x_test)
-    score = metrics.accuracy_score(y_test, predicted_labels)    
+    
+    # Test.
+    score = metrics.mean_squared_error(y_test.astype(np.float), ann.predict(x_test)) 
     print(algo_name + " " + str(k) + " test: " + str(score))
 
