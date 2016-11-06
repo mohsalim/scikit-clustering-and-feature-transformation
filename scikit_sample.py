@@ -41,6 +41,6 @@ x_train, x_test, y_train, y_test = train_test_split(data, target, test_size=0.33
 # Run each homework part.
 #part1(data, target, x_train, y_train, x_test, y_test)
 #part2(data, target, x_train, y_train, x_test, y_test, feature_count)
-part3(data, target, special_k, x_train, y_train, x_test, y_test)
-#part4(data, target, special_k, x_train, y_train, x_test, y_test)
+#part3(data, target, special_k, x_train, y_train, x_test, y_test)
+part4(data, target, special_k, x_train, y_train, x_test, y_test)
 #part5(data, target, special_k, x_train, y_train, x_test, y_test)

@@ -113,14 +113,20 @@ def part2(data, target, x_train, y_train, x_test, y_test, features_count):
     ws.append(bench_mark)
     wb.save('part-2-etr-bench.xlsx')
 
+def prepend_headers(algo, headers):
+    new_headers = []
+    for header in headers:
+        new_headers.append(algo + ' ' + header)
+    return new_headers
+
 def part3(data, target, k_list, x_train, y_train, x_test, y_test):
-    headers = ['algorithm', 'k', 'train wall time', 'test wall time', 'training accuracy', 'testing accuracy', 'training mean squared error', 'testing mean squared error']
+    headers = ['algorithm', 'k', 'train wall time', 'test wall time', 'training accuracy', 'testing accuracy', 'training MSE', 'testing MSE']
     
     # PCA -> KMeans
     print('--- PCA -> KMeans ---')
     wb = Workbook()
     ws = wb.active
-    ws.append(headers)
+    ws.append(prepend_headers('KMeans PCA', headers))
     for k in k_list:
         pca = PCA(n_components=k).fit(x_train)
         # In this case the seeding of the centers is deterministic.
@@ -135,7 +141,7 @@ def part3(data, target, k_list, x_train, y_train, x_test, y_test):
     print('--- ICA -> KMeans ---')
     wb = Workbook()
     ws = wb.active
-    ws.append(headers)
+    ws.append(prepend_headers('KMeans ICA', headers))
     for k in k_list:
         ica = FastICA(n_components=k).fit(x_train)
         kmeans = KMeans(init=ica.components_, n_clusters=k, n_init=1, random_state=0)
@@ -147,7 +153,7 @@ def part3(data, target, k_list, x_train, y_train, x_test, y_test):
     print('--- RCA -> KMeans ---')
     wb = Workbook()
     ws = wb.active
-    ws.append(headers)
+    ws.append(prepend_headers('KMeans RCA', headers))
     for k in k_list:
         rca = GaussianRandomProjection(n_components=k).fit(x_train)
         kmeans = KMeans(init=rca.components_, n_clusters=k, n_init=1, random_state=0)
@@ -159,7 +165,7 @@ def part3(data, target, k_list, x_train, y_train, x_test, y_test):
     print('--- ETR -> KMeans ---')
     wb = Workbook()
     ws = wb.active
-    ws.append(headers)    
+    ws.append(prepend_headers('KMeans ETR', headers))
     x_train_float = x_train.astype(np.float)
     y_train_int = y_train.astype(int)
     for k in k_list:
@@ -181,7 +187,7 @@ def part3(data, target, k_list, x_train, y_train, x_test, y_test):
         print('--- PCA -> EM ---')
         wb = Workbook()
         ws = wb.active
-        ws.append(headers)
+        ws.append(prepend_headers(algo_type + ' PCA', headers))
         for k in k_list:
             pca = PCA(n_components=k).fit(x_train)
             # TODO should I be using weights_init or means_init
@@ -194,7 +200,7 @@ def part3(data, target, k_list, x_train, y_train, x_test, y_test):
         print('--- ICA -> EM ---')
         wb = Workbook()
         ws = wb.active
-        ws.append(headers)
+        ws.append(prepend_headers(algo_type + ' ICA', headers))
         for k in k_list:
             ica = FastICA(n_components=k).fit(x_train)
             em = mixture.GaussianMixture(n_components=k, covariance_type=cv_type, means_init=ica.components_)
@@ -206,7 +212,7 @@ def part3(data, target, k_list, x_train, y_train, x_test, y_test):
         print('--- RCA -> EM ---')
         wb = Workbook()
         ws = wb.active
-        ws.append(headers)
+        ws.append(prepend_headers(algo_type + ' RCA', headers))
         for k in k_list:
             rca = GaussianRandomProjection(n_components=k).fit(x_train)
             em = mixture.GaussianMixture(n_components=k, covariance_type=cv_type, means_init=rca.components_)
@@ -218,7 +224,7 @@ def part3(data, target, k_list, x_train, y_train, x_test, y_test):
         print('--- ETR -> EM ---')
         wb = Workbook()
         ws = wb.active
-        ws.append(headers)
+        ws.append(prepend_headers(algo_type + ' ETR', headers))
         x_train_float = x_train.astype(np.float)
         y_train_int = y_train.astype(int)
         for k in k_list:
@@ -318,4 +324,21 @@ def run_ann_with_dr(ann, k, ann_name, dr_name, x_train, y_train, x_test, y_test)
     print(algo_name + " " + str(k) + " test: " + str(score))
 
 
-#def part5(data, target, k_list, x_train, y_train, x_test, y_test):
+def part5(data, target, k_list, x_train, y_train, x_test, y_test):
+    # After analyzing the data from part 3, these are probably the best DR+Cluster algorithms to run:
+
+    # KMeans + ETR, k = 2
+
+    # EM Diag + ICA, k = 2
+
+    # EM Full + ICA, k = 2
+
+    # KMeans + PCA, k = 2
+
+    # EM Tied + PCA, k = 3
+
+    # EM Tied + RCA, k = 2
+
+    # EM Diag + RCA, k = 3
+
+    # EM Tied + RCA, k = 27
