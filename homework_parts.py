@@ -315,45 +315,132 @@ def part4(data, target, k_list, x_train, y_train, x_test, y_test):
 def run_ann_with_dr(ann, k, ann_name, dr_name, x_train, y_train, x_test, y_test):
     # Train.
     ann.fit(x_train, y_train)
-    score = metrics.mean_squared_error(y_train.astype(np.float), ann.predict(x_train))
+    train_mse = metrics.mean_squared_error(y_train.astype(np.float), ann.predict(x_train))
     algo_name = ann_name + " " + dr_name
-    print(algo_name + " " + str(k) + " train: " + str(score))
+    print(algo_name + " " + str(k) + " train: " + str(train_mse))
     
     # Test.
-    score = metrics.mean_squared_error(y_test.astype(np.float), ann.predict(x_test)) 
-    print(algo_name + " " + str(k) + " test: " + str(score))
+    test_mse = metrics.mean_squared_error(y_test.astype(np.float), ann.predict(x_test)) 
+    print(algo_name + " " + str(k) + " test: " + str(test_mse))
 
+    return (train_mse, test_mse)
 
 def part5(data, target, k_list, x_train, y_train, x_test, y_test):
     x_train_float = x_train.astype(np.float)
     y_train_int = y_train.astype(int)
     x_test_float = x_test.astype(np.float)
+    y_test_int = y_train.astype(int)
+    wb = Workbook()
+    ws = wb.active
+    headers = ['train_mse', 'test_mse']
     
     # After analyzing the data from part 3, these are probably the best Cluster + DR algorithms to run:
 
     # KMeans + ETR, k = 2
     print('--- ETR -> KMeans -> ANN ---')
+    ws.append(prepend_headers('ANN KMeans ETR k=2', headers))
     k = 2
     etr = ExtraTreeRegressor().fit(x_train_float, y_train_int)
     model = SelectFromModel(etr, prefit=True)
     x_train_new = model.transform(x_train_float)
     x_test_new = model.transform(x_test_float)
     kmeans = KMeans(n_clusters=k, n_init=1, random_state=0)
-    train_cluster = kmeans.fit_transform(x_train_new.astype(np.float), y_train.astype(int))
-    test_cluster = kmeans.fit_transform(x_test_new.astype(np.float), y_test.astype(int))
+    train_cluster = kmeans.fit_transform(x_train_new.astype(np.float), y_train_int)
+    test_cluster = kmeans.fit_transform(x_test_new.astype(np.float), y_test_int)
     mlp = MLPRegressor(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(15,), random_state=1)
-    run_ann_with_dr(mlp, k, 'ANN', 'PCA', train_cluster, y_train, test_cluster, y_test)
+    results = run_ann_with_dr(mlp, k, 'ANN', 'ETR', train_cluster, y_train, test_cluster, y_test)
+    ws.append(results)
 
     # EM Diag + ICA, k = 2
-
+    print('--- ICA -> EM Diag -> ANN ---')
+    ws.append(prepend_headers('ANN EM Diag ICA k=2', headers))
+    k = 2
+    ica = FastICA(n_components=k).fit(x_train)
+    em = mixture.GaussianMixture(n_components=k, covariance_type='diag', means_init=ica.components_)
+    em.fit(x_train_float, y_train_int)
+    train_cluster = em.predict_proba(x_train_float)
+    test_cluster = em.predict_proba(x_test_float)
+    mlp = MLPRegressor(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(15,), random_state=1)
+    results = run_ann_with_dr(mlp, k, 'ANN', 'ICA', train_cluster, y_train, test_cluster, y_test)
+    ws.append(results)
+    
     # EM Full + ICA, k = 2
+    print('--- ICA -> EM Full -> ANN ---')
+    ws.append(prepend_headers('ANN EM Full ICA k=2', headers))
+    k = 2
+    ica = FastICA(n_components=k).fit(x_train)
+    em = mixture.GaussianMixture(n_components=k, covariance_type='full', means_init=ica.components_)
+    em.fit(x_train_float, y_train_int)
+    train_cluster = em.predict_proba(x_train_float)
+    test_cluster = em.predict_proba(x_test_float)
+    mlp = MLPRegressor(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(15,), random_state=1)
+    results = run_ann_with_dr(mlp, k, 'ANN', 'ICA', train_cluster, y_train, test_cluster, y_test)
+    ws.append(results)
 
     # KMeans + PCA, k = 2
+    print('--- PCA -> KMeans -> ANN ---')
+    ws.append(prepend_headers('ANN PCA ETR k=2', headers))
+    k = 2
+    pca = PCA(n_components=k).fit(x_train)
+    kmeans = KMeans(init=pca.components_, n_clusters=k, n_init=1, random_state=0)
+    train_cluster = kmeans.fit_transform(x_train_float, y_train_int)
+    test_cluster = kmeans.fit_transform(x_test_float, y_test_int)
+    mlp = MLPRegressor(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(15,), random_state=1)
+    results = run_ann_with_dr(mlp, k, 'ANN', 'PCA', train_cluster, y_train, test_cluster, y_test)
+    ws.append(results)
 
     # EM Tied + PCA, k = 3
+    print('--- PCA -> EM Tied -> ANN ---')
+    ws.append(prepend_headers('ANN EM Tied PCA k=3', headers))
+    k = 3
+    pca = PCA(n_components=k).fit(x_train)
+    em = mixture.GaussianMixture(n_components=k, covariance_type='tied', means_init=pca.components_)
+    em.fit(x_train_float, y_train_int)
+    train_cluster = em.predict_proba(x_train_float)
+    test_cluster = em.predict_proba(x_test_float)
+    mlp = MLPRegressor(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(15,), random_state=1)
+    results = run_ann_with_dr(mlp, k, 'ANN', 'PCA', train_cluster, y_train, test_cluster, y_test)
+    ws.append(results)
 
     # EM Tied + RCA, k = 2
+    print('--- RCA -> EM Tied -> ANN ---')
+    ws.append(prepend_headers('ANN EM Diag RCA k=2', headers))
+    k = 2
+    rca = GaussianRandomProjection(n_components=k).fit(x_train)
+    em = mixture.GaussianMixture(n_components=k, covariance_type='diag', means_init=rca.components_)
+    em.fit(x_train_float, y_train_int)
+    train_cluster = em.predict_proba(x_train_float)
+    test_cluster = em.predict_proba(x_test_float)
+    mlp = MLPRegressor(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(15,), random_state=1)
+    results = run_ann_with_dr(mlp, k, 'ANN', 'RCA', train_cluster, y_train, test_cluster, y_test)
+    ws.append(results)
 
     # EM Diag + RCA, k = 3
+    print('--- RCA -> EM Diag -> ANN ---')
+    ws.append(prepend_headers('ANN EM Diag RCA k=3', headers))
+    k = 3
+    rca = GaussianRandomProjection(n_components=k).fit(x_train)
+    em = mixture.GaussianMixture(n_components=k, covariance_type='diag', means_init=rca.components_)
+    em.fit(x_train_float, y_train_int)
+    train_cluster = em.predict_proba(x_train_float)
+    test_cluster = em.predict_proba(x_test_float)
+    mlp = MLPRegressor(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(15,), random_state=1)
+    results = run_ann_with_dr(mlp, k, 'ANN', 'RCA', train_cluster, y_train, test_cluster, y_test)
+    ws.append(results)
 
     # EM Tied + RCA, k = 27
+    print('--- RCA -> EM Tied -> ANN ---')
+    ws.append(prepend_headers('ANN EM Tied RCA k=27', headers))
+    k = 27
+    rca = GaussianRandomProjection(n_components=k).fit(x_train)
+    em = mixture.GaussianMixture(n_components=k, covariance_type='tied', means_init=rca.components_)
+    em.fit(x_train_float, y_train_int)
+    train_cluster = em.predict_proba(x_train_float)
+    test_cluster = em.predict_proba(x_test_float)
+    mlp = MLPRegressor(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(15,), random_state=1)
+    results = run_ann_with_dr(mlp, k, 'ANN', 'RCA', train_cluster, y_train, test_cluster, y_test)
+    ws.append(results)
+
+    # Save the stats.
+    wb.save('part-5-bench.xlsx')
+
