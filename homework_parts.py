@@ -325,9 +325,24 @@ def run_ann_with_dr(ann, k, ann_name, dr_name, x_train, y_train, x_test, y_test)
 
 
 def part5(data, target, k_list, x_train, y_train, x_test, y_test):
-    # After analyzing the data from part 3, these are probably the best DR+Cluster algorithms to run:
+    x_train_float = x_train.astype(np.float)
+    y_train_int = y_train.astype(int)
+    x_test_float = x_test.astype(np.float)
+    
+    # After analyzing the data from part 3, these are probably the best Cluster + DR algorithms to run:
 
     # KMeans + ETR, k = 2
+    print('--- ETR -> KMeans -> ANN ---')
+    k = 2
+    etr = ExtraTreeRegressor().fit(x_train_float, y_train_int)
+    model = SelectFromModel(etr, prefit=True)
+    x_train_new = model.transform(x_train_float)
+    x_test_new = model.transform(x_test_float)
+    kmeans = KMeans(n_clusters=k, n_init=1, random_state=0)
+    train_cluster = kmeans.fit_transform(x_train_new.astype(np.float), y_train.astype(int))
+    test_cluster = kmeans.fit_transform(x_test_new.astype(np.float), y_test.astype(int))
+    mlp = MLPRegressor(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(15,), random_state=1)
+    run_ann_with_dr(mlp, k, 'ANN', 'PCA', train_cluster, y_train, test_cluster, y_test)
 
     # EM Diag + ICA, k = 2
 
