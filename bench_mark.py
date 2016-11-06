@@ -3,6 +3,7 @@ from sklearn import metrics
 from scipy import stats
 import scipy as sp
 import numpy as np
+from sklearn.feature_selection import SelectFromModel
 
 def bench_kmeans(estimator, name, k, x_train, y_train, x_test, y_test):
     bench_kmeans_format = '% 9s   %.2i    %.3f   %.2fs    %.3f   %.2fs    %i   %.3f   %.3f   %.3f   %.3f   %.3f   %.3f'   #%.3f   %.3f'
@@ -238,5 +239,23 @@ def bench_lda(estimator, name, k, x_train, y_train, x_test, y_test):
                str(estimator.xbar_),
                # Unique class labels.
                str(estimator.classes_))
+
+    return results
+
+def bench_etr(estimator, name, x_train, y_train, x_test, y_test):
+    # Train
+    x_train_float = x_train.astype(np.float)
+    start = time.time()
+    estimator.fit(x_train_float, y_train.astype(int))
+    train_time = time.time() - start
+
+    model = SelectFromModel(estimator, prefit=True)
+    x_new = model.transform(x_train_float)
+
+    results = (name,
+               train_time,
+               str(x_train_float.shape),
+               str(x_new.shape),
+               str(estimator.feature_importances_))
 
     return results

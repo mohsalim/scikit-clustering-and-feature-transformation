@@ -1,6 +1,6 @@
 import arff, numpy as np
 from sklearn.model_selection import train_test_split
-from homework_parts import part1, part2, part3
+from homework_parts import part1, part2, part3, part4
 
 # Get data from arff file.
 dataset = arff.load(open('tic-tac-toe-split.arff', 'r'))
@@ -41,6 +41,6 @@ x_train, x_test, y_train, y_test = train_test_split(data, target, test_size=0.33
 # Run each homework part.
 #part1(data, target, x_train, y_train, x_test, y_test)
 #part2(data, target, x_train, y_train, x_test, y_test, feature_count)
-part3(data, target, special_k, x_train, y_train, x_test, y_test)
-# TODO part 4
+#part3(data, target, special_k, x_train, y_train, x_test, y_test)
+part4(data, target, special_k, x_train, y_train, x_test, y_test)
 # TODO part 5

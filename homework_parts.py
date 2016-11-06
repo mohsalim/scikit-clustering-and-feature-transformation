@@ -1,4 +1,4 @@
-from bench_mark import bench_kmeans, bench_em, bench_pca, bench_ica, bench_rca, bench_lda
+from bench_mark import bench_kmeans, bench_em, bench_pca, bench_ica, bench_rca, bench_lda, bench_etr
 from openpyxl import Workbook
 from sklearn.cluster import KMeans
 from sklearn.random_projection import GaussianRandomProjection
@@ -9,6 +9,9 @@ from sklearn.decomposition import FastICA
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 import time
 import numpy as np
+from sklearn.neural_network import MLPRegressor
+from sklearn.tree import ExtraTreeRegressor
+from sklearn.feature_selection import SelectFromModel
 
 def part1(data, target, x_train, y_train, x_test, y_test):
     # K-Means
@@ -100,6 +103,15 @@ def part2(data, target, x_train, y_train, x_test, y_test, features_count):
         ws.append(bench_mark)
     wb.save('part-2-lda-bench.xlsx')
 
+    # ETR (Extra Trees Regressor)
+    print('--- ETR ---')
+    wb = Workbook()
+    ws = wb.active
+    headers = ['algorithm', 'train wall time', 'old feature size', 'new feature size', 'feature importances']
+    ws.append(headers)
+    bench_mark = bench_etr(ExtraTreeRegressor(), 'ETR', x_train, y_train, x_test, y_test)
+    ws.append(bench_mark)
+    wb.save('part-2-etr-bench.xlsx')
 
 def part3(data, target, k_list, x_train, y_train, x_test, y_test):
     # PCA -> KMeans
@@ -126,14 +138,26 @@ def part3(data, target, k_list, x_train, y_train, x_test, y_test):
         kmeans = KMeans(init=rca.components_, n_clusters=k, n_init=1, random_state=0)
         run_kmeans_with_dr(kmeans, k, 'KMeans', 'RCA', x_train, y_train, x_test, y_test)
 
-    # LDA -> KMeans
+##    # LDA -> KMeans
 ##    print('--- LDA -> KMeans ---')
 ##    for k in k_list:
-##        lda = LinearDiscriminantAnalysis(n_components=k).fit(x_train.astype(np.float), y_train.astype(int))
+##        lda = LinearDiscriminantAnalysis(n_components=k, store_covariance=True).fit(x_train.astype(np.float), y_train.astype(int))
 ##        # LDA doesn't have a components attribute.
 ##        # The coefficients is apparently the equivalent according to this: http://stackoverflow.com/a/13986744/2498729
-##        kmeans = KMeans(init=lda.coef_, n_clusters=k, n_init=1, random_state=0)
+##        kmeans = KMeans(init=lda.covariance_, n_clusters=k, n_init=1, random_state=0)
 ##        run_kmeans_with_dr(kmeans, k, 'KMeans', 'LDA', x_train, y_train, x_test, y_test)
+
+    # ETR -> KMeans
+    print('--- ETR -> KMeans ---')
+    x_train_float = x_train.astype(np.float)
+    y_train_int = y_train.astype(int)
+    for k in k_list:
+        etr = ExtraTreeRegressor().fit(x_train_float, y_train_int)
+        model = SelectFromModel(etr, prefit=True)
+        x_train_new = model.transform(x_train_float)
+        x_test_new = model.transform(x_test)
+        kmeans = KMeans(n_clusters=k, n_init=1, random_state=0)
+        run_kmeans_with_dr(kmeans, k, 'KMeans', 'ETR', x_train_new, y_train, x_test_new, y_test)
 
     cv_types = ['spherical', 'tied', 'diag', 'full']
     for cv_type in cv_types:
@@ -166,6 +190,19 @@ def part3(data, target, k_list, x_train, y_train, x_test, y_test):
 ##            em = mixture.GaussianMixture(n_components=k, covariance_type=cv_type, means_init=lda.coef_)
 ##            run_em_with_dr(em, k, 'EM ' + cv_type, 'LDA', x_train, y_train, x_test, y_test)
 
+        # ETR -> EM
+        print('--- ETR -> EM ---')
+        x_train_float = x_train.astype(np.float)
+        y_train_int = y_train.astype(int)
+        for k in k_list:
+            etr = ExtraTreeRegressor().fit(x_train_float, y_train_int)
+            model = SelectFromModel(etr, prefit=True)
+            x_train_new = model.transform(x_train_float)
+            x_test_new = model.transform(x_test)
+            em = mixture.GaussianMixture(n_components=k, covariance_type=cv_type)
+            run_em_with_dr(kmeans, k, 'EM ' + cv_type, 'ETR', x_train_new, y_train, x_test_new, y_test)
+
+
 def run_kmeans_with_dr(cluster_algo, k, clustering_name, dr_name, x_train, y_train, x_test, y_test):
     # Train.
     cluster_algo.fit(x_train)
@@ -184,5 +221,56 @@ def run_em_with_dr(cluster_algo, k, clustering_name, dr_name, x_train, y_train, 
     predicted_labels = cluster_algo.predict(x_test)
     score = metrics.accuracy_score(y_test, predicted_labels)
     algo_name = clustering_name + " " + dr_name
+    print(algo_name + " " + str(k) + " test: " + str(score))
+
+
+def part4(data, target, k_list, x_train, y_train, x_test, y_test):
+    x_train_float = x_train.astype(np.float)
+    
+    # PCA -> ANN
+    print('--- PCA -> ANN ---')
+    for k in k_list:
+        pca = PCA(n_components=k).fit(x_train)
+        mlp = MLPRegressor(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(15,), random_state=1)
+        run_ann_with_dr(mlp, pca.transform(x_train_float), k, 'ANN', 'PCA', x_train_float, y_train, x_test, y_test)
+
+    # ICA -> ANN
+    print('--- ICA -> ANN ---')
+    for k in k_list:
+        ica = FastICA(n_components=k).fit(x_train)
+        mlp = MLPRegressor(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(15,), random_state=1)
+        run_ann_with_dr(mlp, ica.transform(x_train_float), k, 'ANN', 'ICA', x_train_float, y_train, x_test, y_test)
+
+    # RCA -> ANN
+    print('--- RCA -> ANN ---')
+    for k in k_list:
+        rca = GaussianRandomProjection(n_components=k).fit(x_train)
+        mlp = MLPRegressor(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(15,), random_state=1)
+        run_ann_with_dr(mlp, rca.transform(x_train_float), k, 'ANN', 'RCA', x_train_float, y_train, x_test, y_test)
+
+    # LDA -> ANN
+##    print('--- LDA -> ANN ---')
+##    for k in k_list:
+##        lda = LinearDiscriminantAnalysis(n_components=k).fit(x_train.astype(np.float), y_train.astype(int))
+##        mlp = MLPRegressor(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(15,), random_state=1)
+##        run_ann_with_dr(mlp, lda.transform(x_train_float), k, 'ANN', 'LDA', x_train_float, y_train, x_test, y_test)
+
+
+def run_ann_with_dr(ann, dr_data, k, ann_name, dr_name, x_train, y_train, x_test, y_test):
+    # Train.
+    print(dr_data)
+    print(y_train)
+    ann.fit(dr_data, y_train)
+
+    print(x_train)
+
+    print(y_train)
+    print(ann.predict(x_train))
+    score = metrics.accuracy_score(y_train, ann.predict(x_train))
+    algo_name = ann_name + " " + dr_name
+    print(algo_name + " " + str(k) + " train: " + str(score))
+    #Test
+    predicted_labels = ann.predict(x_test)
+    score = metrics.accuracy_score(y_test, predicted_labels)    
     print(algo_name + " " + str(k) + " test: " + str(score))
 
