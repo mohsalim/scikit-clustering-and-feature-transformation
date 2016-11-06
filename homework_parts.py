@@ -114,41 +114,52 @@ def part2(data, target, x_train, y_train, x_test, y_test, features_count):
     wb.save('part-2-etr-bench.xlsx')
 
 def part3(data, target, k_list, x_train, y_train, x_test, y_test):
+    headers = ['algorithm', 'k', 'train wall time', 'test wall time', 'training accuracy', 'testing accuracy', 'training mean squared error', 'testing mean squared error']
+    
     # PCA -> KMeans
     print('--- PCA -> KMeans ---')
+    wb = Workbook()
+    ws = wb.active
+    ws.append(headers)
     for k in k_list:
         pca = PCA(n_components=k).fit(x_train)
         # In this case the seeding of the centers is deterministic.
         # Hence we run the k-means algorithm only once with n_init=1.
         # Else wise it will give a warning and set n_init to 1 anyways.
         kmeans = KMeans(init=pca.components_, n_clusters=k, n_init=1, random_state=0)
-        run_kmeans_with_dr(kmeans, k, 'KMeans', 'PCA', x_train, y_train, x_test, y_test)
+        bench_mark = run_kmeans_with_dr(kmeans, k, 'KMeans', 'PCA', x_train, y_train, x_test, y_test)
+        ws.append(bench_mark)
+    wb.save('part-3-pca-kmeans-bench.xlsx')
 
     # ICA -> KMeans
     print('--- ICA -> KMeans ---')
+    wb = Workbook()
+    ws = wb.active
+    ws.append(headers)
     for k in k_list:
         ica = FastICA(n_components=k).fit(x_train)
         kmeans = KMeans(init=ica.components_, n_clusters=k, n_init=1, random_state=0)
-        run_kmeans_with_dr(kmeans, k, 'KMeans', 'ICA', x_train, y_train, x_test, y_test)
+        bench_mark = run_kmeans_with_dr(kmeans, k, 'KMeans', 'ICA', x_train, y_train, x_test, y_test)
+        ws.append(bench_mark)
+    wb.save('part-3-ica-kmeans-bench.xlsx')
 
     # RCA -> KMeans
     print('--- RCA -> KMeans ---')
+    wb = Workbook()
+    ws = wb.active
+    ws.append(headers)
     for k in k_list:
         rca = GaussianRandomProjection(n_components=k).fit(x_train)
         kmeans = KMeans(init=rca.components_, n_clusters=k, n_init=1, random_state=0)
-        run_kmeans_with_dr(kmeans, k, 'KMeans', 'RCA', x_train, y_train, x_test, y_test)
-
-##    # LDA -> KMeans
-##    print('--- LDA -> KMeans ---')
-##    for k in k_list:
-##        lda = LinearDiscriminantAnalysis(n_components=k, store_covariance=True).fit(x_train.astype(np.float), y_train.astype(int))
-##        # LDA doesn't have a components attribute.
-##        # The coefficients is apparently the equivalent according to this: http://stackoverflow.com/a/13986744/2498729
-##        kmeans = KMeans(init=lda.covariance_, n_clusters=k, n_init=1, random_state=0)
-##        run_kmeans_with_dr(kmeans, k, 'KMeans', 'LDA', x_train, y_train, x_test, y_test)
+        bench_mark = run_kmeans_with_dr(kmeans, k, 'KMeans', 'RCA', x_train, y_train, x_test, y_test)
+        ws.append(bench_mark)
+    wb.save('part-3-rca-kmeans-bench.xlsx')
 
     # ETR -> KMeans
     print('--- ETR -> KMeans ---')
+    wb = Workbook()
+    ws = wb.active
+    ws.append(headers)    
     x_train_float = x_train.astype(np.float)
     y_train_int = y_train.astype(int)
     for k in k_list:
@@ -157,41 +168,57 @@ def part3(data, target, k_list, x_train, y_train, x_test, y_test):
         x_train_new = model.transform(x_train_float)
         x_test_new = model.transform(x_test)
         kmeans = KMeans(n_clusters=k, n_init=1, random_state=0)
-        run_kmeans_with_dr(kmeans, k, 'KMeans', 'ETR', x_train_new, y_train, x_test_new, y_test)
+        bench_mark = run_kmeans_with_dr(kmeans, k, 'KMeans', 'ETR', x_train_new, y_train, x_test_new, y_test)
+        ws.append(bench_mark)
+    wb.save('part-3-etr-kmeans-bench.xlsx')
 
     cv_types = ['spherical', 'tied', 'diag', 'full']
     for cv_type in cv_types:
+        algo_type = 'EM ' + cv_type
+        algo_type_file = 'em-' + cv_type
+
         # PCA -> EM
         print('--- PCA -> EM ---')
+        wb = Workbook()
+        ws = wb.active
+        ws.append(headers)
         for k in k_list:
             pca = PCA(n_components=k).fit(x_train)
             # TODO should I be using weights_init or means_init
             em = mixture.GaussianMixture(n_components=k, covariance_type=cv_type, means_init=pca.components_)
-            run_em_with_dr(em, k, 'EM ' + cv_type, 'PCA', x_train, y_train, x_test, y_test)
+            bench_mark = run_em_with_dr(em, k, algo_type, 'PCA', x_train, y_train, x_test, y_test)
+            ws.append(bench_mark)
+        wb.save('part-3-pca-' + algo_type_file + '-bench.xlsx')
 
         # ICA -> EM
         print('--- ICA -> EM ---')
+        wb = Workbook()
+        ws = wb.active
+        ws.append(headers)
         for k in k_list:
             ica = FastICA(n_components=k).fit(x_train)
             em = mixture.GaussianMixture(n_components=k, covariance_type=cv_type, means_init=ica.components_)
-            run_em_with_dr(em, k, 'EM ' + cv_type, 'ICA', x_train, y_train, x_test, y_test)
+            bench_mark = run_em_with_dr(em, k, algo_type, 'ICA', x_train, y_train, x_test, y_test)
+            ws.append(bench_mark)
+        wb.save('part-3-ica-' + algo_type_file + '-bench.xlsx')
 
         # RCA -> EM
         print('--- RCA -> EM ---')
+        wb = Workbook()
+        ws = wb.active
+        ws.append(headers)
         for k in k_list:
             rca = GaussianRandomProjection(n_components=k).fit(x_train)
             em = mixture.GaussianMixture(n_components=k, covariance_type=cv_type, means_init=rca.components_)
-            run_em_with_dr(em, k, 'EM ' + cv_type, 'RCA', x_train, y_train, x_test, y_test)
-
-##        # LDA -> EM
-##        print('--- LDA -> EM ---')
-##        for k in k_list:
-##            lda = LinearDiscriminantAnalysis(n_components=k).fit(x_train.astype(np.float), y_train.astype(int))
-##            em = mixture.GaussianMixture(n_components=k, covariance_type=cv_type, means_init=lda.coef_)
-##            run_em_with_dr(em, k, 'EM ' + cv_type, 'LDA', x_train, y_train, x_test, y_test)
+            bench_mark = run_em_with_dr(em, k, algo_type, 'RCA', x_train, y_train, x_test, y_test)
+            ws.append(bench_mark)
+        wb.save('part-3-rca-' + algo_type_file + '-bench.xlsx')
 
         # ETR -> EM
         print('--- ETR -> EM ---')
+        wb = Workbook()
+        ws = wb.active
+        ws.append(headers)
         x_train_float = x_train.astype(np.float)
         y_train_int = y_train.astype(int)
         for k in k_list:
@@ -200,29 +227,50 @@ def part3(data, target, k_list, x_train, y_train, x_test, y_test):
             x_train_new = model.transform(x_train_float)
             x_test_new = model.transform(x_test)
             em = mixture.GaussianMixture(n_components=k, covariance_type=cv_type)
-            run_em_with_dr(kmeans, k, 'EM ' + cv_type, 'ETR', x_train_new, y_train, x_test_new, y_test)
-
+            bench_mark = run_em_with_dr(kmeans, k, algo_type, 'ETR', x_train_new, y_train, x_test_new, y_test)
+            ws.append(bench_mark)
+        wb.save('part-3-etr-' + algo_type_file + '-bench.xlsx')
 
 def run_kmeans_with_dr(cluster_algo, k, clustering_name, dr_name, x_train, y_train, x_test, y_test):
     # Train.
+    start = time.time()
     cluster_algo.fit(x_train)
-    score = metrics.accuracy_score(y_train, cluster_algo.labels_)
+    train_time = time.time() - start
+    train_score = metrics.accuracy_score(y_train, cluster_algo.labels_)
+    train_mse = metrics.mean_squared_error(y_train, cluster_algo.labels_)
     algo_name = clustering_name + " " + dr_name
-    print(algo_name + " " + str(k) + " train: " + str(score))
+    #print(algo_name + " " + str(k) + " train: " + str(score))
+    
     #Test
+    start = time.time()
     predicted_labels = cluster_algo.predict(x_test)
-    score = metrics.accuracy_score(y_test, predicted_labels)    
-    print(algo_name + " " + str(k) + " test: " + str(score))
+    test_time = time.time() - start
+    test_score = metrics.accuracy_score(y_test, predicted_labels)
+    test_mse = metrics.mean_squared_error(y_test, predicted_labels)
+    #print(algo_name + " " + str(k) + " test: " + str(score))
+
+    return (algo_name, k, train_time, test_time, train_score, test_score, train_mse, test_mse)
 
 def run_em_with_dr(cluster_algo, k, clustering_name, dr_name, x_train, y_train, x_test, y_test):
     # Train.
-    cluster_algo.fit(x_train)
-    #Test
-    predicted_labels = cluster_algo.predict(x_test)
-    score = metrics.accuracy_score(y_test, predicted_labels)
     algo_name = clustering_name + " " + dr_name
-    print(algo_name + " " + str(k) + " test: " + str(score))
+    start = time.time()
+    cluster_algo.fit(x_train)
+    train_time = time.time() - start
+    predicted_labels = cluster_algo.predict(x_train)
+    train_score = metrics.accuracy_score(y_train, predicted_labels)
+    train_mse = metrics.mean_squared_error(y_train, predicted_labels)
+    #print(algo_name + " " + str(k) + " test: " + str(score))
 
+    #Test
+    start = time.time()
+    predicted_labels = cluster_algo.predict(x_test)
+    test_time = time.time() - start
+    test_score = metrics.accuracy_score(y_test, predicted_labels)
+    test_mse = metrics.mean_squared_error(y_test, predicted_labels)
+    #print(algo_name + " " + str(k) + " test: " + str(score))
+    
+    return (algo_name, k, train_time, test_time, train_score, test_score, train_mse, test_mse)
 
 def part4(data, target, k_list, x_train, y_train, x_test, y_test):
     x_train_float = x_train.astype(np.float)
@@ -269,3 +317,5 @@ def run_ann_with_dr(ann, k, ann_name, dr_name, x_train, y_train, x_test, y_test)
     score = metrics.mean_squared_error(y_test.astype(np.float), ann.predict(x_test)) 
     print(algo_name + " " + str(k) + " test: " + str(score))
 
+
+#def part5(data, target, k_list, x_train, y_train, x_test, y_test):
