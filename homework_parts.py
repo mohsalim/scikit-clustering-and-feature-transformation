@@ -282,36 +282,58 @@ def part4(data, target, k_list, x_train, y_train, x_test, y_test):
     x_train_float = x_train.astype(np.float)
     y_train_int = y_train.astype(int)
     x_test_float = x_test.astype(np.float)
+    headers = ['k', 'train mse', 'test mse']
     
     # PCA -> ANN
     print('--- PCA -> ANN ---')
+    wb = Workbook()
+    ws = wb.active
+    ws.append(prepend_headers('ANN PCA', headers))
     for k in k_list:
         pca = PCA(n_components=k).fit(x_train)
         mlp = MLPRegressor(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(15,), random_state=1)
-        run_ann_with_dr(mlp, k, 'ANN', 'PCA', pca.transform(x_train_float), y_train, pca.transform(x_test_float), y_test)
+        (train_mse, test_mse) = run_ann_with_dr(mlp, k, 'ANN', 'PCA', pca.transform(x_train_float), y_train, pca.transform(x_test_float), y_test)
+        ws.append((k, train_mse, test_mse))
+    wb.save('part-4-ann-pca-bench.xlsx')
 
     # ICA -> ANN
     print('--- ICA -> ANN ---')
+    wb = Workbook()
+    ws = wb.active
+    ws.append(prepend_headers('ANN ICA', headers))
     for k in k_list:
         ica = FastICA(n_components=k).fit(x_train)
         mlp = MLPRegressor(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(15,), random_state=1)
-        run_ann_with_dr(mlp, k, 'ANN', 'ICA', ica.transform(x_train_float), y_train, ica.transform(x_test_float), y_test)
+        (train_mse, test_mse) = run_ann_with_dr(mlp, k, 'ANN', 'ICA', ica.transform(x_train_float), y_train, ica.transform(x_test_float), y_test)
+        ws.append((k, train_mse, test_mse))
+    wb.save('part-4-ann-ica-bench.xlsx')
+
 
     # RCA -> ANN
     print('--- RCA -> ANN ---')
+    wb = Workbook()
+    ws = wb.active
+    ws.append(prepend_headers('ANN RCA', headers))
     for k in k_list:
         rca = GaussianRandomProjection(n_components=k).fit(x_train)
         mlp = MLPRegressor(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(15,), random_state=1)
-        run_ann_with_dr(mlp, k, 'ANN', 'RCA', rca.transform(x_train_float), y_train, rca.transform(x_test_float), y_test)
+        (train_mse, test_mse) = run_ann_with_dr(mlp, k, 'ANN', 'RCA', rca.transform(x_train_float), y_train, rca.transform(x_test_float), y_test)
+        ws.append((k, train_mse, test_mse))
+    wb.save('part-4-ann-rca-bench.xlsx')
 
     # ETR -> ANN
     print('--- ETR -> ANN ---')
+    wb = Workbook()
+    ws = wb.active
+    ws.append(prepend_headers('ANN ETR', headers))
     for k in k_list:
         etr = ExtraTreeRegressor().fit(x_train_float, y_train_int)
         model = SelectFromModel(etr, prefit=True)
         mlp = MLPRegressor(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(15,), random_state=1)
-        run_ann_with_dr(mlp, k, 'ANN', 'ETR', model.transform(x_train_float), y_train, model.transform(x_test_float), y_test)
-
+        (train_mse, test_mse) = run_ann_with_dr(mlp, k, 'ANN', 'ETR', model.transform(x_train_float), y_train, model.transform(x_test_float), y_test)
+        ws.append((k, train_mse, test_mse))
+    wb.save('part-4-ann-etr-bench.xlsx')
+    
 def run_ann_with_dr(ann, k, ann_name, dr_name, x_train, y_train, x_test, y_test):
     # Train.
     ann.fit(x_train, y_train)
