@@ -401,7 +401,7 @@ def part5(data, target, k_list, x_train, y_train, x_test, y_test):
 
     # KMeans + PCA, k = 2
     print('--- PCA -> KMeans -> ANN ---')
-    ws.append(prepend_headers('ANN PCA ETR k=2', headers))
+    ws.append(prepend_headers('ANN KMeans PCA k=2', headers))
     k = 2
     pca = PCA(n_components=k).fit(x_train)
     kmeans = KMeans(init=pca.components_, n_clusters=k, n_init=1, random_state=0)
